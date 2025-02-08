@@ -11,7 +11,7 @@
         <div class="nav-brand">Browser Games</div>
         <ul class="nav-links">
             <li><a href="../index.html">Home</a></li>
-            <li><a href="game1.html" class="active">Axel's first game</a></li>
+            <li><a href="game1.html" class="active">Game 1</a></li>
             <li><a href="game2.html">Game 2</a></li>
             <li><a href="game3.html">Game 3</a></li>
         </ul>
@@ -20,7 +20,127 @@
     <main class="container">
         <h1>Game 1</h1>
         <div id="game-container">
-            <!-- Your game canvas or content will go here -->
+            <div id="timer">Time: 0s</div>
+            <canvas id="gameCanvas"></canvas>
+            <script>
+                const canvas = document.getElementById("gameCanvas");
+                const ctx = canvas.getContext("2d");
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+        
+                let dot = { x: canvas.width / 2, y: canvas.height / 2, radius: 10, speedLimit: 5, lastX: canvas.width / 2, lastY: canvas.height / 2 };
+                let lasers = [];
+                let startTime = Date.now();
+                let spawnInterval = 2000;
+                let gameActive = true; // New flag to control game loop
+        
+                window.addEventListener("mousemove", (e) => {
+                    if (!gameActive) return; // Stop player movement after game over
+        
+                    let dx = e.clientX - dot.lastX;
+                    let dy = e.clientY - dot.lastY;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+        
+                    if (distance > dot.speedLimit) {
+                        let angle = Math.atan2(dy, dx);
+                        dot.x = dot.lastX + Math.cos(angle) * dot.speedLimit;
+                        dot.y = dot.lastY + Math.sin(angle) * dot.speedLimit;
+                    } else {
+                        dot.x = e.clientX;
+                        dot.y = e.clientY;
+                    }
+        
+                    dot.lastX = dot.x;
+                    dot.lastY = dot.y;
+                });
+        
+                function spawnLaser() {
+                    if (!gameActive) return; // Stop spawning lasers after game over
+        
+                    let vertical = Math.random() > 0.5;
+                    if (vertical) {
+                        let x = Math.random() * canvas.width;
+                        lasers.push({ x, y: 0, width: 5, height: canvas.height, direction: 'vertical', active: false, flickerCount: 0 });
+                    } else {
+                        let y = Math.random() * canvas.height;
+                        lasers.push({ x: 0, y, width: canvas.width, height: 5, direction: 'horizontal', active: false, flickerCount: 0 });
+                    }
+                    setTimeout(() => {
+                        lasers.shift();
+                    }, 3000);
+                }
+        
+                function updateLasers() {
+                    lasers.forEach(laser => {
+                        if (laser.flickerCount < 25) {
+                            laser.flickerCount++;
+                        } else {
+                            laser.active = true;
+                        }
+                    });
+                }
+        
+                function checkCollision() {
+                    lasers.forEach(laser => {
+                        if (laser.active) {
+                            let dx = Math.abs(laser.x - dot.x);
+                            let dy = Math.abs(laser.y - dot.y);
+                            if (laser.direction === 'vertical' && dx < dot.radius + laser.width / 2) {
+                                gameOver();
+                            } else if (laser.direction === 'horizontal' && dy < dot.radius + laser.height / 2) {
+                                gameOver();
+                            }
+                        }
+                    });
+                }
+        
+                function gameOver() {
+                    gameActive = false; // Stop game loop
+                    clearInterval(spawnLaserInterval); // Stop spawning lasers
+                    document.getElementById("timer").innerText = "Game Over! You survived for " + ((Date.now() - startTime) / 1000).toFixed(1) + " seconds.";
+                }
+        
+                function updateTimer() {
+                    if (!gameActive) return; // Stop updating timer after game over
+                    let elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                    document.getElementById("timer").innerText = "Time: " + elapsedTime + "s";
+                    if (elapsedTime % 3 === 0) {
+                        spawnInterval = Math.max(500, spawnInterval - 100);
+                        restartSpawnInterval();
+                    }
+                }
+        
+                function draw() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = "white";
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+                    ctx.fill();
+        
+                    lasers.forEach(laser => {
+                        ctx.fillStyle = laser.active ? "red" : (laser.flickerCount % 2 === 0 ? "transparent" : "red");
+                        ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+                    });
+                }
+        
+                let spawnLaserInterval = setInterval(spawnLaser, spawnInterval);
+        
+                function restartSpawnInterval() {
+                    clearInterval(spawnLaserInterval);
+                    spawnLaserInterval = setInterval(spawnLaser, spawnInterval);
+                }
+        
+                function gameLoop() {
+                    if (!gameActive) return; // Stop loop when game is over
+                    updateLasers();
+                    checkCollision();
+                    updateTimer();
+                    draw();
+                    requestAnimationFrame(gameLoop);
+                }
+        
+                gameLoop();
+            </script>    
         </div>
     </main>
 </body>
