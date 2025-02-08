@@ -25,8 +25,11 @@
             <script>
                 const canvas = document.getElementById("gameCanvas");
                 const ctx = canvas.getContext("2d");
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+                canvas.width = 800;
+                canvas.height = 600;
+                canvas.style.border = "1px solid #333";
+                canvas.style.display = "block";
+                canvas.style.margin = "20px auto";
         
                 let dot = { x: canvas.width / 2, y: canvas.height / 2, radius: 10, speedLimit: 5, lastX: canvas.width / 2, lastY: canvas.height / 2 };
                 let lasers = [];
@@ -37,8 +40,19 @@
                 window.addEventListener("mousemove", (e) => {
                     if (!gameActive) return; // Stop player movement after game over
         
-                    let dx = e.clientX - dot.lastX;
-                    let dy = e.clientY - dot.lastY;
+                    // Get canvas position relative to viewport
+                    const rect = canvas.getBoundingClientRect();
+                    
+                    // Adjust mouse coordinates relative to canvas
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+        
+                    // Ensure the dot stays within canvas bounds
+                    const boundedX = Math.max(dot.radius, Math.min(canvas.width - dot.radius, mouseX));
+                    const boundedY = Math.max(dot.radius, Math.min(canvas.height - dot.radius, mouseY));
+        
+                    let dx = boundedX - dot.lastX;
+                    let dy = boundedY - dot.lastY;
                     let distance = Math.sqrt(dx * dx + dy * dy);
         
                     if (distance > dot.speedLimit) {
@@ -46,8 +60,8 @@
                         dot.x = dot.lastX + Math.cos(angle) * dot.speedLimit;
                         dot.y = dot.lastY + Math.sin(angle) * dot.speedLimit;
                     } else {
-                        dot.x = e.clientX;
-                        dot.y = e.clientY;
+                        dot.x = boundedX;
+                        dot.y = boundedY;
                     }
         
                     dot.lastX = dot.x;
