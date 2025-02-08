@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circle Soccer</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .navbar {
+            width: 100%;
+            background-color: #333;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .nav-links li {
+            margin: 0 1rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links a:hover {
+            color: #ddd;
+        }
+
+        #gameCanvas {
+            border: 2px solid #333;
+            background-color: #4CAF50;
+        }
+
+        .score-container {
+            font-size: 24px;
+            margin: 1rem 0;
+            font-weight: bold;
+        }
+
+        .controls {
+            margin-top: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="game1.html">Game 1</a></li>
+            <li><a href="game2.html">Game 2</a></li>
+            <li><a href="game3.html" class="active">Circle Soccer</a></li>
+        </ul>
+    </nav>
+
+    <div class="score-container">
+        Player: <span id="playerScore">0</span> - Bot: <span id="botScore">0</span>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    
+    <div class="controls">
+        <p>Use Arrow Keys or WASD to move your player (Blue Circle)</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game objects
+        const player = {
+            x: 200,
+            y: canvas.height / 2,
+            radius: 20,
+            speed: 2,
+            color: '#0066cc'
+        };
+
+        const bot = {
+            x: 600,
+            y: canvas.height / 2,
+            radius: 20,
+            speed: 1.5,
+            color: '#cc0000'
+        };
+
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            speedX: 0,
+            speedY: 0,
+            color: '#ffffff'
+        };
+
+        const goals = {
+            width: 20,
+            height: 100
+        };
+
+        let playerScore = 0;
+        let botScore = 0;
+
+        // Input handling
+        const keys = {};
+        document.addEventListener('keydown', (e) => keys[e.key] = true);
+        document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        function movePlayer() {
+            if ((keys['ArrowUp'] || keys['w']) && player.y > player.radius) {
+                player.y -= player.speed;
+            }
+            if ((keys['ArrowDown'] || keys['s']) && player.y < canvas.height - player.radius) {
+                player.y += player.speed;
+            }
+            if ((keys['ArrowLeft'] || keys['a']) && player.x > player.radius) {
+                player.x -= player.speed;
+            }
+            if ((keys['ArrowRight'] || keys['d']) && player.x < canvas.width - player.radius) {
+                player.x += player.speed;
+            }
+        }
+
+        function moveBot() {
+            const targetY = ball.y;
+            const targetX = ball.x > canvas.width / 2 ? ball.x : canvas.width * 0.75;
+            
+            if (Math.abs(bot.y - targetY) > 5) {
+                bot.y += bot.y < targetY ? bot.speed : -bot.speed;
+            }
+            if (Math.abs(bot.x - targetX) > 5) {
+                bot.x += bot.x < targetX ? bot.speed : -bot.speed;
+            }
+        }
+
+        function checkCollision(circle1, circle2) {
+            const dx = circle1.x - circle2.x;
+            const dy = circle1.y - circle2.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return distance < circle1.radius + circle2.radius;
+        }
+
+        function updateBall() {
+            // Apply friction
+            ball.speedX *= 0.995;
+            ball.speedY *= 0.995;
+
+            // Update position
+            ball.x += ball.speedX;
+            ball.y += ball.speedY;
+
+            // Wall collisions
+            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                ball.speedY *= -0.7;
+                ball.y = ball.y - ball.radius < 0 ? ball.radius : canvas.height - ball.radius;
+            }
+
+            // Side wall collisions (only if not hitting goals)
+            if (ball.x - ball.radius < 0) {
+                if (ball.y < canvas.height / 2 - goals.height / 2 || ball.y > canvas.height / 2 + goals.height / 2) {
+                    ball.speedX *= -0.7;
+                    ball.x = ball.radius;
+                } else {
+                    // Bot scores
+                    botScore++;
+                    document.getElementById('botScore').textContent = botScore;
+                    resetBall();
+                }
+            } else if (ball.x + ball.radius > canvas.width) {
+                if (ball.y < canvas.height / 2 - goals.height / 2 || ball.y > canvas.height / 2 + goals.height / 2) {
+                    ball.speedX *= -0.7;
+                    ball.x = canvas.width - ball.radius;
+                } else {
+                    // Player scores
+                    playerScore++;
+                    document.getElementById('playerScore').textContent = playerScore;
+                    resetBall();
+                }
+            }
+
+            // Player collision
+            if (checkCollision(player, ball)) {
+                const dx = ball.x - player.x;
+                const dy = ball.y - player.y;
+                const angle = Math.atan2(dy, dx);
+                const speed = 6;
+                ball.speedX = Math.cos(angle) * speed;
+                ball.speedY = Math.sin(angle) * speed;
+            }
+
+            // Bot collision
+            if (checkCollision(bot, ball)) {
+                const dx = ball.x - bot.x;
+                const dy = ball.y - bot.y;
+                const angle = Math.atan2(dy, dx);
+                const speed = 6;
+                ball.speedX = Math.cos(angle) * speed;
+                ball.speedY = Math.sin(angle) * speed;
+            }
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speedX = 0;
+            ball.speedY = 0;
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw center line
+            ctx.beginPath();
+            ctx.strokeStyle = '#ffffff';
+            ctx.setLineDash([5, 15]);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw goals
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
+            ctx.fillRect(canvas.width - goals.width, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
+
+            // Draw players and ball
+            ctx.beginPath();
+            ctx.fillStyle = player.color;
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.fillStyle = bot.color;
+            ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.fillStyle = ball.color;
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function gameLoop() {
+            movePlayer();
+            moveBot();
+            updateBall();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html> 
