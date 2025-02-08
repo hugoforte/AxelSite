@@ -37,7 +37,7 @@
                     height: 15,
                     x: 350,
                     y: 550,
-                    speed: 4,
+                    speed: 8,
                     dx: 0
                 };
 
@@ -45,9 +45,9 @@
                     x: 400,
                     y: 540,
                     radius: 8,
-                    speed: 2,
-                    dx: 2,
-                    dy: -2
+                    speed: 4,
+                    dx: 4,
+                    dy: -4
                 };
 
                 const brickRowCount = 5;
@@ -202,11 +202,16 @@
                     collisionDetection();
                     movePaddle();
                     moveBall();
-
-                    requestAnimationFrame(draw);
                 }
 
-                draw();
+                // Replace requestAnimationFrame with setInterval
+                const gameInterval = setInterval(() => {
+                    if (gameActive) {
+                        draw();
+                    } else {
+                        clearInterval(gameInterval);
+                    }
+                }, 8); // Faster update rate (approximately 120 FPS)
             </script>
         </div>
     </main>
