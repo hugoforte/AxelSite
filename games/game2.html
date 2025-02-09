@@ -63,7 +63,7 @@
                 height: 15,
                 x: 350,
                 y: 550,
-                speed: 8,
+                speed: 600, // Increased from 400 to 600 (1.5x)
                 dx: 0
             };
 
@@ -71,9 +71,9 @@
                 x: 400,
                 y: 540,
                 radius: 8,
-                speed: 4,
-                dx: 4,
-                dy: -4
+                maxSpeed: 600, // Increased from 400 to 600 (1.5x)
+                dx: 450, // Increased from 300 to 450 (1.5x)
+                dy: -450 // Increased from -300 to -450 (1.5x)
             };
 
             const brickRowCount = 5;
@@ -173,8 +173,8 @@
                 }
             }
 
-            function movePaddle() {
-                paddle.x += paddle.dx;
+            function movePaddle(deltaSeconds) {
+                paddle.x += paddle.dx * deltaSeconds;
 
                 // Detect walls
                 if (paddle.x < 0) {
@@ -184,9 +184,17 @@
                 }
             }
 
-            function moveBall() {
-                ball.x += ball.dx;
-                ball.y += ball.dy;
+            function moveBall(deltaSeconds) {
+                ball.x += ball.dx * deltaSeconds;
+                ball.y += ball.dy * deltaSeconds;
+
+                // Enforce maximum speed
+                const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                if (currentSpeed > ball.maxSpeed) {
+                    const scale = ball.maxSpeed / currentSpeed;
+                    ball.dx *= scale;
+                    ball.dy *= scale;
+                }
 
                 // Detect walls
                 if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
@@ -204,40 +212,49 @@
                     document.location.reload();
                 }
 
-                // Detect paddle collision
+                // Detect paddle collision with consistent bounce
                 if (ball.y + ball.radius > paddle.y &&
                     ball.x > paddle.x &&
                     ball.x < paddle.x + paddle.width) {
-                    ball.dy = -ball.speed;
+                    ball.dy = -ball.maxSpeed;
                     
-                    // Add some randomness to the ball direction
+                    // Add controlled angle change based on hit position
                     const hitPoint = (ball.x - (paddle.x + paddle.width/2)) / (paddle.width/2);
-                    ball.dx = hitPoint * ball.speed;
+                    ball.dx = hitPoint * ball.maxSpeed;
                 }
             }
 
-            function draw() {
+            // Use a fixed timestep for more consistent updates
+            let lastTime = performance.now();
+            const fixedTimeStep = 1000/60; // Target 60 FPS in milliseconds
+
+            // Replace setInterval with requestAnimationFrame for smoother animation
+            function gameLoop() {
                 if (!gameActive) return;
 
-                // Clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const currentTime = performance.now();
+                const deltaTime = currentTime - lastTime;
+                const deltaSeconds = deltaTime / 1000; // Convert to seconds
+                
+                if (deltaTime >= fixedTimeStep) {
+                    // Clear canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                drawBricks();
-                drawBall();
-                drawPaddle();
-                collisionDetection();
-                movePaddle();
-                moveBall();
+                    drawBricks();
+                    drawBall();
+                    drawPaddle();
+                    collisionDetection();
+                    movePaddle(deltaSeconds);
+                    moveBall(deltaSeconds);
+
+                    lastTime = currentTime;
+                }
+
+                requestAnimationFrame(gameLoop);
             }
 
-            // Replace requestAnimationFrame with setInterval
-            const gameInterval = setInterval(() => {
-                if (gameActive) {
-                    draw();
-                } else {
-                    clearInterval(gameInterval);
-                }
-            }, 8); // Faster update rate (approximately 120 FPS)
+            // Start the game loop
+            gameLoop();
         </script>
     </div>
 </body>

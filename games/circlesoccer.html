@@ -200,29 +200,24 @@
             }
         }
 
-        function resetBall() {
-            ball.x = canvas.width * 0.75;
-            ball.y = canvas.height / 2;
-            ball.speedX = 0;
-            ball.speedY = 0;
-        }
-
         function draw() {
-            // Clear canvas with clearRect for better performance
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Clear only the areas that changed instead of the whole canvas
+            // Clear previous positions
+            ctx.clearRect(player.x - player.radius - 1, player.y - player.radius - 1, 
+                         player.radius * 2 + 2, player.radius * 2 + 2);
+            ctx.clearRect(bot.x - bot.radius - 1, bot.y - bot.radius - 1, 
+                         bot.radius * 2 + 2, bot.radius * 2 + 2);
+            ctx.clearRect(ball.x - ball.radius - 1, ball.y - ball.radius - 1, 
+                         ball.radius * 2 + 2, ball.radius * 2 + 2);
             
-            // Draw background
+            // Draw background only where we cleared
             ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw center line (simplified)
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(canvas.width / 2 - 2, 0, 4, canvas.height);
-
-            // Draw goals
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
-            ctx.fillRect(canvas.width - goals.width, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
+            ctx.fillRect(player.x - player.radius - 1, player.y - player.radius - 1, 
+                        player.radius * 2 + 2, player.radius * 2 + 2);
+            ctx.fillRect(bot.x - bot.radius - 1, bot.y - bot.radius - 1, 
+                        bot.radius * 2 + 2, bot.radius * 2 + 2);
+            ctx.fillRect(ball.x - ball.radius - 1, ball.y - ball.radius - 1, 
+                        ball.radius * 2 + 2, ball.radius * 2 + 2);
 
             // Draw players and ball using optimized circles
             // Player
@@ -244,18 +239,46 @@
             ctx.fill();
         }
 
-        // Replace requestAnimationFrame with setInterval
+        // Draw the static elements once at startup
+        function drawStatic() {
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw center line
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(canvas.width / 2 - 2, 0, 4, canvas.height);
+
+            // Draw goals
+            ctx.fillRect(0, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
+            ctx.fillRect(canvas.width - goals.width, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
+        }
+
+        // Draw static elements once
+        drawStatic();
+
+        // Replace requestAnimationFrame with setInterval at a lower rate
         const gameInterval = setInterval(() => {
-            movePlayer();
-            moveBot();
-            updateBall();
-            draw();
-        }, 8); // Halved from 16 for twice the update rate (120 FPS)
+            if (gameActive) {
+                movePlayer();
+                moveBot();
+                updateBall();
+                draw();
+            }
+        }, 16); // 60 FPS is enough for smooth gameplay
 
         // Clean up interval when leaving page
         window.addEventListener('beforeunload', () => {
             clearInterval(gameInterval);
         });
+
+        // Redraw static elements when scoring
+        function resetBall() {
+            ball.x = canvas.width * 0.75;
+            ball.y = canvas.height / 2;
+            ball.speedX = 0;
+            ball.speedY = 0;
+            drawStatic(); // Redraw static elements when resetting
+        }
     </script>
 </body>
 </html> 
