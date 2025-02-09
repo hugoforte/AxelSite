@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteor Dodger</title>
+    <style>
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            z-index: 1000;
+        }
+
+        .home-button:hover {
+            background-color: #45a049;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            padding-top: 40px;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            background-color: #000;
+            margin-top: 20px;
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .controls {
+            margin-top: 1rem;
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="home-button">Home</a>
+    <h1>Meteor Dodger</h1>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="controls">
+        <p>Use WASD to move and jump. Avoid the meteors!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // Game objects
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 30,
+            width: 30,
+            height: 30,
+            speed: 5,
+            jumpForce: -15,
+            velocityY: 0,
+            color: '#4CAF50'
+        };
+
+        const meteors = [];
+        const gravity = 0.8;
+        let score = 0;
+        let gameActive = true;
+        const keys = {};
+        let spawnRate = 500; // Initial spawn rate in milliseconds
+        let meteorSpeedMultiplier = 1; // Speed multiplier that will increase with score
+        let meteorSpawnInterval;
+
+        // Handle keyboard input
+        document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        function spawnMeteor() {
+            if (!gameActive) return;
+            
+            const size = Math.random() * 20 + 20; // Random size between 20 and 40
+            const baseSpeed = Math.random() * 3 + 5; // Base speed between 5 and 8
+            const meteor = {
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                size: size,
+                speed: baseSpeed * meteorSpeedMultiplier, // Apply speed multiplier
+                color: '#ff4444'
+            };
+            meteors.push(meteor);
+        }
+
+        function updateDifficulty() {
+            // Increase speed multiplier
+            meteorSpeedMultiplier = 1 + (score * 0.1); // 10% faster for each point
+
+            // Increase spawn rate (decrease spawn interval)
+            const newSpawnRate = Math.max(100, 500 - (score * 20)); // Minimum 100ms interval
+            if (newSpawnRate !== spawnRate) {
+                spawnRate = newSpawnRate;
+                clearInterval(meteorSpawnInterval);
+                meteorSpawnInterval = setInterval(spawnMeteor, spawnRate);
+            }
+        }
+
+        function updatePlayer() {
+            // Horizontal movement
+            if (keys['a'] && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys['d'] && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+
+            // Jumping
+            if (keys['w'] && player.y === canvas.height - player.height) {
+                player.velocityY = player.jumpForce;
+            }
+
+            // Apply gravity
+            player.velocityY += gravity;
+            player.y += player.velocityY;
+
+            // Ground collision
+            if (player.y > canvas.height - player.height) {
+                player.y = canvas.height - player.height;
+                player.velocityY = 0;
+            }
+        }
+
+        function updateMeteors() {
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                const meteor = meteors[i];
+                meteor.y += meteor.speed;
+
+                // Check collision with player
+                if (meteor.y + meteor.size > player.y &&
+                    meteor.y < player.y + player.height &&
+                    meteor.x + meteor.size > player.x &&
+                    meteor.x < player.x + player.width) {
+                    gameOver();
+                }
+
+                // Remove meteors that are off screen
+                if (meteor.y > canvas.height) {
+                    meteors.splice(i, 1);
+                    score++;
+                    document.getElementById('score').textContent = 'Score: ' + score;
+                    updateDifficulty(); // Update difficulty when score increases
+                }
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Draw meteors with simpler shapes
+            meteors.forEach(meteor => {
+                ctx.fillStyle = meteor.color;
+                ctx.fillRect(meteor.x, meteor.y, meteor.size, meteor.size);
+            });
+        }
+
+        // Spawn meteors at regular intervals
+        setInterval(spawnMeteor, 500);
+
+        // Handle restart
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'r' && !gameActive) {
+                resetGame();
+            }
+        });
+
+        // Replace requestAnimationFrame with setInterval
+        const gameInterval = setInterval(() => {
+            if (gameActive) {
+                updatePlayer();
+                updateMeteors();
+                draw();
+            }
+        }, 16); // approximately 60 FPS
+
+        // Clean up interval on game over
+        function gameOver() {
+            gameActive = false;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+            ctx.font = '24px Arial';
+            ctx.fillText('Final Score: ' + score, canvas.width / 2, canvas.height / 2 + 40);
+            ctx.fillText('Press R to restart', canvas.width / 2, canvas.height / 2 + 80);
+        }
+
+        function resetGame() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height - player.height;
+            player.velocityY = 0;
+            meteors.length = 0;
+            score = 0;
+            meteorSpeedMultiplier = 1;
+            spawnRate = 500;
+            document.getElementById('score').textContent = 'Score: 0';
+            gameActive = true;
+            
+            // Reset spawn interval
+            clearInterval(meteorSpawnInterval);
+            meteorSpawnInterval = setInterval(spawnMeteor, spawnRate);
+        }
+
+        // Initialize meteor spawn interval
+        meteorSpawnInterval = setInterval(spawnMeteor, spawnRate);
+    </script>
+</body>
+</html>
