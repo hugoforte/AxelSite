@@ -73,7 +73,7 @@
             x: 200,
             y: canvas.height / 2,
             radius: 20,
-            speed: 2,
+            speed: 4,
             color: '#0066cc'
         };
 
@@ -81,12 +81,12 @@
             x: 600,
             y: canvas.height / 2,
             radius: 20,
-            speed: 1.5,
+            speed: 3,
             color: '#cc0000'
         };
 
         const ball = {
-            x: canvas.width / 2,
+            x: canvas.width * 0.75,
             y: canvas.height / 2,
             radius: 10,
             speedX: 0,
@@ -184,7 +184,7 @@
                 const dx = ball.x - player.x;
                 const dy = ball.y - player.y;
                 const angle = Math.atan2(dy, dx);
-                const speed = 6;
+                const speed = 12;
                 ball.speedX = Math.cos(angle) * speed;
                 ball.speedY = Math.sin(angle) * speed;
             }
@@ -194,65 +194,68 @@
                 const dx = ball.x - bot.x;
                 const dy = ball.y - bot.y;
                 const angle = Math.atan2(dy, dx);
-                const speed = 6;
+                const speed = 12;
                 ball.speedX = Math.cos(angle) * speed;
                 ball.speedY = Math.sin(angle) * speed;
             }
         }
 
         function resetBall() {
-            ball.x = canvas.width / 2;
+            ball.x = canvas.width * 0.75;
             ball.y = canvas.height / 2;
             ball.speedX = 0;
             ball.speedY = 0;
         }
 
         function draw() {
-            // Clear canvas
+            // Clear canvas with clearRect for better performance
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
             ctx.fillStyle = '#4CAF50';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw center line
-            ctx.beginPath();
-            ctx.strokeStyle = '#ffffff';
-            ctx.setLineDash([5, 15]);
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
-            ctx.stroke();
-            ctx.setLineDash([]);
+            // Draw center line (simplified)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(canvas.width / 2 - 2, 0, 4, canvas.height);
 
             // Draw goals
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
             ctx.fillRect(canvas.width - goals.width, canvas.height / 2 - goals.height / 2, goals.width, goals.height);
 
-            // Draw players and ball
-            ctx.beginPath();
+            // Draw players and ball using optimized circles
+            // Player
             ctx.fillStyle = player.color;
+            ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.beginPath();
+            // Bot
             ctx.fillStyle = bot.color;
+            ctx.beginPath();
             ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.beginPath();
+            // Ball
             ctx.fillStyle = ball.color;
+            ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        function gameLoop() {
+        // Replace requestAnimationFrame with setInterval
+        const gameInterval = setInterval(() => {
             movePlayer();
             moveBot();
             updateBall();
             draw();
-            requestAnimationFrame(gameLoop);
-        }
+        }, 8); // Halved from 16 for twice the update rate (120 FPS)
 
-        // Start the game
-        gameLoop();
+        // Clean up interval when leaving page
+        window.addEventListener('beforeunload', () => {
+            clearInterval(gameInterval);
+        });
     </script>
 </body>
 </html> 
