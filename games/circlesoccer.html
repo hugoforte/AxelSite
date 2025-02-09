@@ -49,6 +49,22 @@
             margin-top: 1rem;
             text-align: center;
         }
+
+        .reset-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .reset-button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -62,6 +78,7 @@
     
     <div class="controls">
         <p>Use Arrow Keys or WASD to move your player (Blue Circle)</p>
+        <button class="reset-button" onclick="resetBall()">Reset Ball</button>
     </div>
 
     <script>
@@ -86,11 +103,13 @@
         };
 
         const ball = {
-            x: canvas.width / 2,
+            x: canvas.width * 0.75,
             y: canvas.height / 2,
             radius: 10,
             speedX: 0,
             speedY: 0,
+            maxSpeed: 12,
+            friction: 0.99,
             color: '#ffffff'
         };
 
@@ -143,8 +162,8 @@
 
         function updateBall() {
             // Apply friction
-            ball.speedX *= 0.995;
-            ball.speedY *= 0.995;
+            ball.speedX *= ball.friction;
+            ball.speedY *= ball.friction;
 
             // Update position
             ball.x += ball.speedX;
@@ -201,7 +220,7 @@
         }
 
         function resetBall() {
-            ball.x = canvas.width / 2;
+            ball.x = canvas.width * 0.75;
             ball.y = canvas.height / 2;
             ball.speedX = 0;
             ball.speedY = 0;
