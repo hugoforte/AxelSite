@@ -6,6 +6,24 @@
     <title>Browser Games Collection</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            z-index: 1000;
+        }
+
+        .home-button:hover {
+            background-color: #45a049;
+        }
+
         .games-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -41,20 +59,14 @@
         .play-button:hover {
             background-color: #45a049;
         }
+
+        .container {
+            padding-top: 40px;
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">Browser Games</div>
-        <ul class="nav-links">
-            <li><a href="index.html" class="active">Home</a></li>
-            <li><a href="games/lazergame.html">Game 1</a></li>
-            <li><a href="games/game2.html">Game 2</a></li>
-            <li><a href="games/game3.html">Game 3</a></li>
-            <li><a href="games/mazegame.html">Maze Game</a></li>
-        </ul>
-
-    </nav>
+    <a href="index.html" class="home-button">Home</a>
 
     <main class="container">
         <h1>Welcome to Browser Games</h1>

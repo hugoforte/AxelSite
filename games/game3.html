@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Circle Soccer</title>
     <style>
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            z-index: 1000;
+        }
+
+        .home-button:hover {
+            background-color: #45a049;
+        }
+
         body {
             margin: 0;
             display: flex;
@@ -12,39 +30,13 @@
             align-items: center;
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
+            padding-top: 40px;
         }
         
-        .navbar {
-            width: 100%;
-            background-color: #333;
-            padding: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .nav-links {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-        }
-
-        .nav-links li {
-            margin: 0 1rem;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-        }
-
-        .nav-links a:hover {
-            color: #ddd;
-        }
-
         #gameCanvas {
             border: 2px solid #333;
             background-color: #4CAF50;
+            margin-top: 20px;
         }
 
         .score-container {
@@ -60,14 +52,7 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <ul class="nav-links">
-            <li><a href="../index.html">Home</a></li>
-            <li><a href="game1.html">Game 1</a></li>
-            <li><a href="game2.html">Game 2</a></li>
-            <li><a href="game3.html" class="active">Circle Soccer</a></li>
-        </ul>
-    </nav>
+    <a href="../index.html" class="home-button">Home</a>
 
     <div class="score-container">
         Player: <span id="playerScore">0</span> - Bot: <span id="botScore">0</span>
