@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong</title>
+    <style>
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            z-index: 1000;
+        }
+
+        .home-button:hover {
+            background-color: #45a049;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            padding-top: 40px;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            background-color: #000;
+            margin-top: 20px;
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .controls {
+            margin-top: 1rem;
+            text-align: center;
+            color: #333;
+        }
+
+        .reset-button, .mode-button, .difficulty-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.2s;
+        }
+
+        .reset-button:hover, .mode-button:hover, .difficulty-button:hover {
+            background-color: #45a049;
+        }
+
+        .difficulty-section {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .difficulty-button.active {
+            background-color: #2E7D32;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="home-button">Home</a>
+    <h1>Pong</h1>
+    <div id="score">Player 1: <span id="playerScore">0</span> - <span id="rightPlayerLabel">Bot</span>: <span id="botScore">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="controls">
+        <p id="controls-text">Player 1: W/S keys | Bot plays automatically</p>
+        <div>
+            <button class="reset-button" onclick="resetBall()">Reset Ball</button>
+            <button class="mode-button" onclick="toggleMode()">Switch to 2 Player Mode</button>
+        </div>
+        <div id="difficulty-section" class="difficulty-section">
+            <button class="difficulty-button active" onclick="setBotDifficulty('easy')">Easy</button>
+            <button class="difficulty-button" onclick="setBotDifficulty('medium')">Medium</button>
+            <button class="difficulty-button" onclick="setBotDifficulty('hard')">Hard</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 400;
+
+        let isTwoPlayerMode = false;
+
+        const BOT_SPEEDS = {
+            easy: 3,
+            medium: 5,
+            hard: 7
+        };
+
+        // Game objects
+        const paddleWidth = 15;
+        const paddleHeight = 80;
+        const player = {
+            y: canvas.height / 2 - paddleHeight / 2,
+            speed: 10,
+            score: 0
+        };
+
+        const rightPlayer = {
+            y: canvas.height / 2 - paddleHeight / 2,
+            speed: BOT_SPEEDS.easy, // Start with easy mode
+            score: 0,
+            isBot: true
+        };
+
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: 10,
+            speedX: 12,
+            speedY: 0,
+            maxSpeed: 15,
+            minSpeed: 12,
+            friction: 0.995
+        };
+
+        let gameActive = true;
+        const keys = {};
+
+        // Event listeners
+        document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        function setBotDifficulty(difficulty) {
+            if (rightPlayer.isBot) {
+                rightPlayer.speed = BOT_SPEEDS[difficulty];
+                
+                // Update button styles
+                const buttons = document.querySelectorAll('.difficulty-button');
+                buttons.forEach(button => {
+                    button.classList.remove('active');
+                    if (button.textContent.toLowerCase() === difficulty) {
+                        button.classList.add('active');
+                    }
+                });
+
+                // Reset scores when changing difficulty
+                player.score = 0;
+                rightPlayer.score = 0;
+                document.getElementById('playerScore').textContent = '0';
+                document.getElementById('botScore').textContent = '0';
+                resetBall();
+            }
+        }
+
+        function toggleMode() {
+            isTwoPlayerMode = !isTwoPlayerMode;
+            rightPlayer.isBot = !isTwoPlayerMode;
+            const modeButton = document.querySelector('.mode-button');
+            const controlsText = document.getElementById('controls-text');
+            const rightPlayerLabel = document.getElementById('rightPlayerLabel');
+            const difficultySection = document.getElementById('difficulty-section');
+            
+            if (isTwoPlayerMode) {
+                modeButton.textContent = 'Switch to 1 Player Mode';
+                controlsText.textContent = 'Player 1: W/S keys | Player 2: Arrow Up/Down keys';
+                rightPlayerLabel.textContent = 'Player 2';
+                difficultySection.style.display = 'none';
+                rightPlayer.speed = 10; // Reset to player speed in 2 player mode
+            } else {
+                modeButton.textContent = 'Switch to 2 Player Mode';
+                controlsText.textContent = 'Player 1: W/S keys | Bot plays automatically';
+                rightPlayerLabel.textContent = 'Bot';
+                difficultySection.style.display = 'flex';
+                rightPlayer.speed = BOT_SPEEDS.easy; // Reset to easy mode when switching back to bot
+                setBotDifficulty('easy'); // Reset difficulty button states
+            }
+            
+            // Reset scores when switching modes
+            player.score = 0;
+            rightPlayer.score = 0;
+            document.getElementById('playerScore').textContent = '0';
+            document.getElementById('botScore').textContent = '0';
+            resetBall();
+        }
+
+        function movePlayer() {
+            if (keys['w'] && player.y > 0) {
+                player.y -= player.speed;
+            }
+            if (keys['s'] && player.y < canvas.height - paddleHeight) {
+                player.y += player.speed;
+            }
+
+            // Move right player if in two-player mode
+            if (!rightPlayer.isBot) {
+                if (keys['arrowup'] && rightPlayer.y > 0) {
+                    rightPlayer.y -= rightPlayer.speed;
+                }
+                if (keys['arrowdown'] && rightPlayer.y < canvas.height - paddleHeight) {
+                    rightPlayer.y += rightPlayer.speed;
+                }
+            }
+        }
+
+        function moveBot() {
+            if (rightPlayer.isBot) {
+                const botCenter = rightPlayer.y + paddleHeight / 2;
+                const ballCenter = ball.y;
+                
+                if (Math.abs(botCenter - ballCenter) > 10) {
+                    if (botCenter < ballCenter && rightPlayer.y < canvas.height - paddleHeight) {
+                        rightPlayer.y += rightPlayer.speed;
+                    } else if (botCenter > ballCenter && rightPlayer.y > 0) {
+                        rightPlayer.y -= rightPlayer.speed;
+                    }
+                }
+            }
+        }
+
+        function updateBall() {
+            // Apply friction
+            ball.speedX *= ball.friction;
+            ball.speedY *= ball.friction;
+
+            // Enforce maximum and minimum speed
+            const currentSpeed = Math.sqrt(ball.speedX * ball.speedX + ball.speedY * ball.speedY);
+            if (currentSpeed > ball.maxSpeed) {
+                const scale = ball.maxSpeed / currentSpeed;
+                ball.speedX *= scale;
+                ball.speedY *= scale;
+            } else if (currentSpeed < ball.minSpeed) {
+                const scale = ball.minSpeed / currentSpeed;
+                ball.speedX *= scale;
+                ball.speedY *= scale;
+            }
+
+            // Update position
+            ball.x += ball.speedX;
+            ball.y += ball.speedY;
+
+            // Wall collisions (top and bottom)
+            if (ball.y < ball.size || ball.y > canvas.height - ball.size) {
+                ball.speedY = -ball.speedY * 0.8;
+                ball.y = ball.y < ball.size ? ball.size : canvas.height - ball.size;
+            }
+
+            // Paddle collisions
+            // Player paddle
+            if (ball.x - ball.size < paddleWidth && 
+                ball.y > player.y && 
+                ball.y < player.y + paddleHeight) {
+                ball.speedX = Math.abs(ball.speedX);
+                const hitPoint = (ball.y - (player.y + paddleHeight/2)) / (paddleHeight/2);
+                ball.speedY = hitPoint * ball.maxSpeed;
+            }
+
+            // Right player/bot paddle
+            if (ball.x + ball.size > canvas.width - paddleWidth && 
+                ball.y > rightPlayer.y && 
+                ball.y < rightPlayer.y + paddleHeight) {
+                ball.speedX = -Math.abs(ball.speedX);
+                const hitPoint = (ball.y - (rightPlayer.y + paddleHeight/2)) / (paddleHeight/2);
+                ball.speedY = hitPoint * ball.maxSpeed;
+            }
+
+            // Scoring
+            if (ball.x < 0) {
+                rightPlayer.score++;
+                document.getElementById('botScore').textContent = rightPlayer.score;
+                resetBall();
+            } else if (ball.x > canvas.width) {
+                player.score++;
+                document.getElementById('playerScore').textContent = player.score;
+                resetBall();
+            }
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speedX = Math.random() < 0.5 ? -12 : 12;
+            ball.speedY = (Math.random() - 0.5) * 8; // Add some initial vertical movement
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw center line
+            ctx.strokeStyle = '#fff';
+            ctx.setLineDash([5, 15]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw paddles
+            ctx.fillStyle = '#fff';
+            // Player paddle
+            ctx.fillRect(0, player.y, paddleWidth, paddleHeight);
+            // Right player/bot paddle
+            ctx.fillRect(canvas.width - paddleWidth, rightPlayer.y, paddleWidth, paddleHeight);
+
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Game loop
+        const gameInterval = setInterval(() => {
+            if (gameActive) {
+                movePlayer();
+                moveBot();
+                updateBall();
+                draw();
+            }
+        }, 16); // 60 FPS
+
+        // Clean up
+        window.addEventListener('beforeunload', () => {
+            clearInterval(gameInterval);
+        });
+    </script>
+</body>
+</html>
